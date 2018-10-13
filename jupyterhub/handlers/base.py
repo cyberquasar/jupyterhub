@@ -1072,21 +1072,15 @@ class UserSpawnHandler(BaseHandler):
         if not user_path:
             user_path = '/'
         current_user = self.current_user
-        if (
-            current_user
-            and current_user.name != user_name
-            and current_user.admin
-            and self.settings.get('admin_access', False)
-        ):
-            # allow admins to spawn on behalf of users
-            user = self.find_user(user_name)
-            if user is None:
-                # no such user
-                raise web.HTTPError(404, "No such user %s" % user_name)
-            self.log.info("Admin %s requesting spawn on behalf of %s",
-                          current_user.name, user.name)
-            admin_spawn = True
-            should_spawn = True
+        """Since Pinterest env has shared repository. We truly don't need to spawn target user container. Current user 
+        container should be able to display notebooks. SO just redirect to current user's url"""
+
+        if ( current_user and current_user.name != user_name ):
+            target_url = self.request.uri
+            self.log.debug("Current user {}, while user from url {}. Redirecting to current user url".format(current_user.name,user_name))
+            modified_url = re.sub("/{}/".format(user_name), "/{}/".format(current_user.name), target_url, 1)
+            self.redirect(modified_url)
+            return
         else:
             user = current_user
             admin_spawn = False
